@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PrivateDrop — Private File Transfer</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#121a2d;--line:#26324b;--text:#eef3ff;--muted:#9aa8c4;--accent:#9bb4ff;--purple:#b7a2ff;--green:#48d6a0;--red:#ff8999}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 10% 0%,#1c2a50 0,transparent 42%),var(--bg);color:var(--text);font:15px/1.5 Inter,system-ui,-apple-system,Segoe UI,sans-serif}.wrap{max-width:1050px;margin:auto;padding:26px 18px 42px}.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:42px}.brand{display:flex;align-items:center;gap:11px;font-weight:800;font-size:19px}.logo{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,#7c9cff,#b7a2ff);color:#10172b;font-size:22px}.pill{font-size:11px;color:#b8c8e7;border:1px solid var(--line);padding:7px 10px;border-radius:99px}.eyebrow{color:#a6b8ff;text-transform:uppercase;font-size:11px;letter-spacing:2px;font-weight:800}.hero{margin-bottom:24px}.hero h1{font-size:clamp(30px,5vw,43px);letter-spacing:-1.4px;line-height:1.1;margin:9px 0}.hero p,.muted{color:var(--muted)}.hero p{max-width:610px;margin:0}.card{background:linear-gradient(180deg,#141d32,#101728);border:1px solid var(--line);border-radius:19px;padding:22px;box-shadow:0 16px 48px #0002}.login{max-width:450px;margin:0 auto}.card h2{font-size:17px;margin:0 0 4px}.sub{font-size:13px;color:var(--muted);margin:0 0 18px}.field{display:block;margin:15px 0}.field span{display:block;font-size:13px;color:#c6d0e5;margin-bottom:7px}.field input{width:100%;background:#0b1222;border:1px solid #2b3854;border-radius:11px;padding:12px;color:var(--text);outline:none}.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px #7c9cff20}.btn{border:0;border-radius:11px;padding:12px 15px;font-weight:750;color:#0b1020;background:linear-gradient(135deg,#9bb4ff,#b7a2ff);cursor:pointer}.btn:disabled{opacity:.55;cursor:wait}.full{width:100%}.secondary{color:#dce5ff;background:#202c45;border:1px solid #33415f;padding:9px 12px;font-size:12px}.status{display:none;margin-top:12px;padding:10px 12px;border-radius:10px;background:#2a1e2a;color:#ffb8c2;font-size:12px;overflow-wrap:anywhere}.status.show{display:block}.status.ok{background:#132d2a;color:#9af0cf}.hint{font-size:12px;color:var(--muted);margin:13px 0 0}.layout{display:grid;grid-template-columns:.95fr 1.2fr;gap:17px}.hidden{display:none!important}.drop{border:1.5px dashed #46577b;border-radius:15px;background:#0d1527;padding:24px 14px;text-align:center;cursor:pointer}.drop:hover,.drop.drag{border-color:var(--accent);background:#151f39}.drop strong{display:block;font-size:14px}.drop p{color:var(--muted);font-size:12px;margin:5px 0 0}.drop input{display:none}.rowhead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:14px 0}.count{font-size:11px;color:#b8c8e7;background:#202b43;padding:4px 8px;border-radius:99px}.files{display:flex;flex-direction:column;gap:9px}.empty{border:1px solid #26324b;border-radius:13px;padding:24px 12px;text-align:center;color:var(--muted);font-size:13px}.file{display:flex;align-items:center;gap:10px;background:#0d1527;border:1px solid #25314a;border-radius:13px;padding:11px}.fileicon{width:38px;height:40px;display:grid;place-items:center;background:#1d2a47;border-radius:10px;font-size:18px;flex-shrink:0}.fileinfo{min-width:0;flex:1}.filename{font-size:13px;font-weight:650;overflow-wrap:anywhere}.filesize{font-size:11px;color:var(--muted)}.note{margin-top:16px;padding:12px 14px;border:1px solid #55492c;background:#211e18;border-radius:13px;color:#e4d4a9;font-size:12px}.note strong{color:#ffe5a1}.footer{text-align:center;color:#657391;font-size:11px;margin-top:26px}
+@media(max-width:740px){.wrap{padding:19px 13px 32px}.top{margin-bottom:31px}.layout{grid-template-columns:1fr}.card{padding:18px}.hero h1{letter-spacing:-.8px}.pill{font-size:10px}}
+</style>
+</head>
+<body><div class="wrap">
+<header class="top"><div class="brand"><div class="logo">↗</div><span>PrivateDrop</span></div><div class="pill">🔒 Private transfer workspace</div></header>
+<section class="hero"><div class="eyebrow">Between your devices</div><h1>Transfer files.<br>Keep it simple.</h1><p>Sign in, upload from your lab PC, then download on your laptop. Files are removed after a successful download.</p></section>
+<section id="loginCard" class="card login"><h2>Welcome back</h2><p class="sub">Sign in to your private workspace</p>
+<form id="loginForm"><label class="field"><span>Account ID</span><input id="userId" autocomplete="username" placeholder="Your account ID" required maxlength="64"></label><label class="field"><span>Password</span><input id="password" type="password" autocomplete="current-password" placeholder="Your password" required></label><button class="btn full" id="loginBtn" type="submit">Sign in →</button><div id="loginStatus" class="status" role="status"></div><p class="hint">Accounts are created by the owner in the backend dashboard. No public sign-up.</p></form></section>
+<main id="dashboard" class="layout hidden">
+<section class="card"><div style="display:flex;justify-content:space-between;align-items:start;gap:10px"><div><div class="eyebrow">Workspace</div><h2 style="margin-top:7px">Upload files</h2><p class="sub">Choose files or drag them below.</p></div><button class="btn secondary" id="logoutBtn">Log out</button></div>
+<label class="drop" id="dropZone" for="fileInput"><div style="font-size:27px;margin-bottom:5px">⇧</div><strong>Choose files or drag them here</strong><p>Code, documents, images and more</p><input id="fileInput" type="file" multiple></label><div id="uploadStatus" class="status" role="status"></div><p class="hint">Uploads go to private cloud storage. Only signed-in accounts can access them.</p>
+<div class="note"><strong>One-time transfer</strong><br>After a complete download, the file is deleted from storage. If a download fails, the file is kept so you can retry.</div></section>
+<section class="card"><div class="eyebrow">Shared inbox</div><div class="rowhead"><h2>Available files</h2><span class="count" id="fileCount">0 files</span></div><div id="fileList" class="files"><div class="empty">Sign in to load files.</div></div><p class="hint">Files are shared between the accounts you create for your small group.</p></section>
+</main><footer class="footer">PrivateDrop • Hosted frontend + private backend storage</footer></div>
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const SUPABASE_URL = 'PASTE_SUPABASE_URL_HERE';
+const SUPABASE_ANON_KEY = 'PASTE_SUPABASE_ANON_KEY_HERE';
+const BUCKET = 'private-files';
+const MAX_FILE_BYTES = 50 * 1024 * 1024; // 50 MB per file; adjust only if your plan supports it.
+const configured = SUPABASE_URL.startsWith('https://') && !SUPABASE_URL.includes('PASTE_') && !SUPABASE_ANON_KEY.includes('PASTE_');
+const supabase = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}) : null;
+const $ = id => document.getElementById(id);
+const loginCard=$('loginCard'), dashboard=$('dashboard'), loginStatus=$('loginStatus'), uploadStatus=$('uploadStatus');
+let busy = false;
+
+function showStatus(el, message, ok=false){el.textContent=message;el.className='status show'+(ok?' ok':'');}
+function clearStatus(el){el.textContent='';el.className='status';}
+function idToEmail(id){return id.trim().toLowerCase()+'@privatedrop.invalid';}
+function safeName(name){return name.replace(/[\/\\]/g,'_').replace(/[\u0000-\u001f]/g,'_').slice(0,180)||'file';}
+function prettySize(n){if(n<1024)return n+' B';if(n<1048576)return(n/1024).toFixed(1)+' KB';if(n<1073741824)return(n/1048576).toFixed(1)+' MB';return(n/1073741824).toFixed(2)+' GB';}
+function setBusy(v){busy=v;$('loginBtn').disabled=v;$('fileInput').disabled=v;}
+function renderSignedIn(user){loginCard.classList.add('hidden');dashboard.classList.remove('hidden');$('userId').value=user?.email?.split('@')[0]||'';}
+function renderSignedOut(){dashboard.classList.add('hidden');loginCard.classList.remove('hidden');$('fileList').innerHTML='<div class="empty">Sign in to load files.</div>';$('fileCount').textContent='0 files';}
+async function refreshFiles(){
+  if(!supabase)return;
+  const {data,error}=await supabase.from('files').select('id,original_name,size_bytes,created_at').order('created_at',{ascending:false});
+  if(error){$('fileList').innerHTML='';const e=document.createElement('div');e.className='empty';e.textContent='Could not load files: '+error.message;$('fileList').append(e);return;}
+  $('fileCount').textContent=`${data.length} ${data.length===1?'file':'files'}`;
+  $('fileList').replaceChildren();
+  if(!data.length){const e=document.createElement('div');e.className='empty';e.textContent='No files waiting. Upload one from another device.';$('fileList').append(e);return;}
+  for(const file of data){
+    const row=document.createElement('div');row.className='file';
+    const icon=document.createElement('div');icon.className='fileicon';icon.textContent='▤';
+    const info=document.createElement('div');info.className='fileinfo';
+    const name=document.createElement('div');name.className='filename';name.textContent=file.original_name;
+    const size=document.createElement('div');size.className='filesize';size.textContent=prettySize(Number(file.size_bytes)||0)+' · '+new Date(file.created_at).toLocaleString();
+    info.append(name,size);
+    const btn=document.createElement('button');btn.className='download';btn.textContent='Download & delete';
+    btn.addEventListener('click',()=>downloadAndDelete(file,btn));
+    row.append(icon,info,btn);$('fileList').append(row);
+  }
+}
+async function uploadFiles(files){
+  if(!supabase||busy||!files.length)return;
+  clearStatus(uploadStatus);
+  for(const file of files){
+    if(file.size>MAX_FILE_BYTES){showStatus(uploadStatus,`${file.name}: over the 50 MB limit.`);continue;}
+    setBusy(true);
+    try{
+      const objectName=crypto.randomUUID()+'-'+safeName(file.name);
+      const {data:stored,error:storageError}=await supabase.storage.from(BUCKET).upload(objectName,file,{upsert:false,contentType:file.type||'application/octet-stream'});
+      if(storageError)throw storageError;
+      const {error:dbError}=await supabase.from('files').insert({original_name:file.name,size_bytes:file.size,storage_path:stored.path,uploaded_by:(await supabase.auth.getUser()).data.user.id});
+      if(dbError){await supabase.storage.from(BUCKET).remove([stored.path]);throw dbError;}
+      showStatus(uploadStatus,`Uploaded ${file.name}`,true);
+    }catch(err){showStatus(uploadStatus,`Upload failed: ${err.message||'Unknown error'}`);}
+    finally{setBusy(false);}
+  }
+  $('fileInput').value='';await refreshFiles();
+}
+async function downloadAndDelete(file,button){
+  if(busy)return;
+  button.disabled=true;button.textContent='Preparing…';
+  try{
+    // First claim the file atomically. Other users cannot claim it at the same time.
+    const {data:claim,error:claimError}=await supabase.rpc('claim_file_for_download',{target_file_id:file.id});
+    if(claimError)throw claimError;
+    if(!claim)throw new Error('This file is already being downloaded or is no longer available. Refresh the list.');
+    const {data:blob,error:downloadError}=await supabase.storage.from(BUCKET).download(file.storage_path);
+    if(downloadError||!blob){
+      await supabase.rpc('release_file_claim',{target_file_id:file.id});
+      throw downloadError||new Error('Download failed');
+    }
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=file.original_name;document.body.append(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),30000);
+    // The complete file was fetched by this browser; now delete storage object and metadata.
+    const {error:removeError}=await supabase.storage.from(BUCKET).remove([file.storage_path]);
+    if(removeError){showStatus(uploadStatus,'Downloaded, but automatic deletion failed. Ask the owner to check storage.');}
+    else{
+      const {error:dbError}=await supabase.from('files').delete().eq('id',file.id);
+      if(dbError)showStatus(uploadStatus,'Downloaded; storage object removed, but metadata cleanup needs attention.');
+      else showStatus(uploadStatus,'Download complete. File deleted from the server.',true);
+    }
+    await refreshFiles();
+  }catch(err){showStatus(uploadStatus,err.message||'Download failed.');await refreshFiles();}
+  finally{button.disabled=false;button.textContent='Download & delete';}
+}
+$('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();clearStatus(loginStatus);
+  if(!configured){showStatus(loginStatus,'Setup needed: add your Supabase URL and anon key in index.html, then run the SQL setup in supabase/setup.sql.');return;}
+  const id=$('userId').value.trim(),password=$('password').value;
+  if(!/^[a-zA-Z0-9._-]{3,64}$/.test(id)){showStatus(loginStatus,'ID must be 3–64 characters: letters, numbers, dot, underscore or hyphen.');return;}
+  setBusy(true);
+  try{
+    const {data,error}=await supabase.auth.signInWithPassword({email:idToEmail(id),password});
+    if(error)throw error;
+    $('password').value='';renderSignedIn(data.user);await refreshFiles();
+  }catch(err){showStatus(loginStatus,'Login failed. Check your ID and password.');}
+  finally{setBusy(false);}
+});
+$('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();renderSignedOut();clearStatus(uploadStatus);});
+$('fileInput').addEventListener('change',e=>uploadFiles([...e.target.files]));
+const dz=$('dropZone');
+['dragenter','dragover'].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.add('drag')}));
+['dragleave','drop'].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.remove('drag')}));
+dz.addEventListener('drop',e=>uploadFiles([...e.dataTransfer.files]));
+if(!configured){showStatus(loginStatus,'One-time setup required: configure Supabase in index.html and apply supabase/setup.sql.');}
+else{
+  const {data:{subscription}}=supabase.auth.onAuthStateChange((event,session)=>{
+    if(session){renderSignedIn(session.user);setTimeout(()=>refreshFiles(),0);}
+    else renderSignedOut();
+  });
+  const {data:{session}}=await supabase.auth.getSession();
+  if(session){renderSignedIn(session.user);await refreshFiles();}
+  window.addEventListener('beforeunload',()=>subscription.unsubscribe());
+}
+</script></body></html>
