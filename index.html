@@ -23,8 +23,8 @@
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const SUPABASE_URL = 'PASTE_SUPABASE_URL_HERE';
-const SUPABASE_ANON_KEY = 'PASTE_SUPABASE_ANON_KEY_HERE';
+const SUPABASE_URL = 'https://xheahheaorzqeguuxitq.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_Y-DnJaKwHXhsJWz7BFXCwg_DW_qfR3q';
 const BUCKET = 'private-files';
 const MAX_FILE_BYTES = 50 * 1024 * 1024; // 50 MB per file; adjust only if your plan supports it.
 const configured = SUPABASE_URL.startsWith('https://') && !SUPABASE_URL.includes('PASTE_') && !SUPABASE_ANON_KEY.includes('PASTE_');
@@ -43,7 +43,7 @@ function renderSignedIn(user){loginCard.classList.add('hidden');dashboard.classL
 function renderSignedOut(){dashboard.classList.add('hidden');loginCard.classList.remove('hidden');$('fileList').innerHTML='<div class="empty">Sign in to load files.</div>';$('fileCount').textContent='0 files';}
 async function refreshFiles(){
   if(!supabase)return;
-  const {data,error}=await supabase.from('files').select('id,original_name,size_bytes,created_at').order('created_at',{ascending:false});
+  const {data,error}=await supabase.from('files').select('id,original_name,size_bytes,created_at,storage_path').order('created_at',{ascending:false});
   if(error){$('fileList').innerHTML='';const e=document.createElement('div');e.className='empty';e.textContent='Could not load files: '+error.message;$('fileList').append(e);return;}
   $('fileCount').textContent=`${data.length} ${data.length===1?'file':'files'}`;
   $('fileList').replaceChildren();
