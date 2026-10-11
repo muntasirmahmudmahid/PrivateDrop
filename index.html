@@ -142,9 +142,11 @@ async function downloadAndDelete(file,button){
   try{
     // First claim the file atomically. Other users cannot claim it at the same time.
     const {data:claim,error:claimError}=await supabase.rpc('claim_file_for_download',{target_file_id:file.id});
+    console.log("Claim:", claim, claimError);
     if(claimError)throw claimError;
     if(!claim)throw new Error('This file is already being downloaded or is no longer available. Refresh the list.');
     const {data:blob,error:downloadError}=await supabase.storage.from(BUCKET).download(file.storage_path);
+    console.log("Download:", downloadError);
     if(downloadError||!blob){
       await supabase.rpc('release_file_claim',{target_file_id:file.id});
       throw downloadError||new Error('Download failed');
@@ -153,15 +155,17 @@ async function downloadAndDelete(file,button){
     setTimeout(()=>URL.revokeObjectURL(url),30000);
     // The complete file was fetched by this browser; now delete storage object and metadata.
     const {error:removeError}=await supabase.storage.from(BUCKET).remove([file.storage_path]);
+    console.log("Storage:", removeError);
     if(removeError){showStatus(uploadStatus,'Downloaded, but automatic deletion failed. Ask the owner to check storage.');}
     else{
       const {error:dbError}=await supabase.from('files').delete().eq('id',file.id);
+      console.log("Database:", dbError);
       if(dbError)showStatus(uploadStatus,'Downloaded; storage object removed, but metadata cleanup needs attention.');
       else showStatus(uploadStatus,'Download complete. File deleted from the server.',true);
     }
     await refreshFiles();
   }catch(err){showStatus(uploadStatus,err.message||'Download failed.');await refreshFiles();}
-  finally{button.disabled=false;btn.innerHTML='<i class="fa-solid fa-download"></i>';}
+  finally{button.disabled=false;button.innerHTML='<i class="fa-solid fa-download"></i>';}
 }
 $('loginForm').addEventListener('submit',async e=>{
   e.preventDefault();clearStatus(loginStatus);
