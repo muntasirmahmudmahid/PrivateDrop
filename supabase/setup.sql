@@ -81,8 +81,7 @@ declare released_count integer;
 begin
   update public.files
   set download_claimed_at = null
-  where id = target_file_id
-    and download_claimed_at > pg_catalog.now() - interval '15 minutes';
+  where id = target_file_id;
   get diagnostics released_count = row_count;
   return released_count = 1;
 end;

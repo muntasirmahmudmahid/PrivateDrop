@@ -114,8 +114,8 @@ async function refreshFiles(){
     const size=document.createElement('div');size.className='filesize';size.textContent=prettySize(Number(file.size_bytes)||0)+' · '+new Date(file.created_at).toLocaleString();
     info.append(name,size);
     const btn=document.createElement('button');btn.className='download';btn.innerHTML='<i class="fa-solid fa-download"></i>';
-    btn.addEventListener('click',()=>downloadAndDelete(file,btn));
-    row.append(icon,info,btn);$('fileList').append(row);
+    btn.addEventListener('click',()=>downloadFile(file,btn));
+    const del=document.createElement('button');del.className='download';del.innerHTML='<i class="fa-solid fa-trash"></i>';del.onclick=async()=>{if(confirm("Delete this file?")){await supabase.storage.from(BUCKET).remove([file.storage_path]);await supabase.from('files').delete().eq('id',file.id);await refreshFiles();}};row.append(icon,info,btn,del);$('fileList').append(row);
   }
 }
 async function uploadFiles(files){
@@ -136,33 +136,26 @@ async function uploadFiles(files){
   }
   $('fileInput').value='';await refreshFiles();
 }
-async function downloadAndDelete(file,button){
+async function downloadFile(file,button){
   if(busy)return;
   button.disabled=true;button.textContent='Preparing…';
   try{
     // First claim the file atomically. Other users cannot claim it at the same time.
     const {data:claim,error:claimError}=await supabase.rpc('claim_file_for_download',{target_file_id:file.id});
-    console.log("Claim:", claim, claimError);
     if(claimError)throw claimError;
     if(!claim)throw new Error('This file is already being downloaded or is no longer available. Refresh the list.');
     const {data:blob,error:downloadError}=await supabase.storage.from(BUCKET).download(file.storage_path);
-    console.log("Download:", downloadError);
     if(downloadError||!blob){
       await supabase.rpc('release_file_claim',{target_file_id:file.id});
       throw downloadError||new Error('Download failed');
     }
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=file.original_name;document.body.append(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),30000);
-    // The complete file was fetched by this browser; now delete storage object and metadata.
-    const {error:removeError}=await supabase.storage.from(BUCKET).remove([file.storage_path]);
-    console.log("Storage:", removeError);
-    if(removeError){showStatus(uploadStatus,'Downloaded, but automatic deletion failed. Ask the owner to check storage.');}
-    else{
-      const {error:dbError}=await supabase.from('files').delete().eq('id',file.id);
-      console.log("Database:", dbError);
-      if(dbError)showStatus(uploadStatus,'Downloaded; storage object removed, but metadata cleanup needs attention.');
-      else showStatus(uploadStatus,'Download complete. File deleted from the server.',true);
-    }
+    // Download only; no automatic deletion.
+    await supabase.rpc('release_file_claim', {
+    target_file_id: file.id
+    });
+    showStatus(uploadStatus,'Download complete.',true);
     await refreshFiles();
   }catch(err){showStatus(uploadStatus,err.message||'Download failed.');await refreshFiles();}
   finally{button.disabled=false;button.innerHTML='<i class="fa-solid fa-download"></i>';}
