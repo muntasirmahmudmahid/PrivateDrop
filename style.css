@@ -210,8 +210,8 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--theme);
-  border: none;
+  background: transparent;
+  border: 1px solid var(--theme);
   border-radius: 13px;
   padding: 11px;
 }
@@ -220,8 +220,7 @@ body {
   height: 40px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--text);
-  background: transparent;
+  background: var(--theme);
   border-radius: 10px;
   font-size: 26px;
   flex-shrink: 0;
@@ -238,6 +237,23 @@ body {
 .filesize {
   font-size: 13px;
   color: var(--text);
+}
+.download {
+  color: var(--text);
+  background-color: var(--theme);
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.25s;
+}
+.download:hover {
+  box-shadow: var(--shadow);
+  color: white;
+}
+.download:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 .note {
   margin-top: 30px;
@@ -278,21 +294,4 @@ body {
 
 #upload {
   font-size: 50px;
-}
-.download {
-  border: 1px gray solid;
-  color: white;
-  background-color: transparent;
-  border-radius: 8px;
-  padding: 10px 16px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: 0.25s;
-}
-.download:hover {
-  background: rgb(17, 38, 71);
-}
-.download:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
