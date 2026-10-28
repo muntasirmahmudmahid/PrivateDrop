@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>FTP_Server</title>
+    <link rel="icon" href="favicon.png" type="image/png">
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.css"
@@ -19,37 +20,20 @@
         <div class="brand">
           <div class="logo">
             <i
-              class="fa-solid fa-retweet"
-              style="color: rgb(162, 160, 160); font-size: 17px"
-            ></i>
+              class="fa-solid fa-retweet"></i>
           </div>
-          <span
-            style="
-              font-weight: 500;
-              font-family: lucida console;
-              font-size: 1.5rem;
-            "
-            >FTP Server</span
+          <span class="brandName">FTP Server</span
           >
         </div>
       </header>
       <section id="loginCard" class="card login">
-        <h2
-          style="
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 1.5rem;
-            font-weight: 500;
-            color: rgb(185, 175, 175);
-          "
-        >
+        <h2>
           As-salamu-alaykum
         </h2>
         <p class="sub">Sign in to your private workspace</p>
         <form id="loginForm">
           <label class="field"
             ><input
-              class="mm3"
               id="userId"
               placeholder="Username"
               required
@@ -57,22 +41,18 @@
           ></label>
           <label class="field"
             ><input
-              class="mm3"
               id="password"
               type="password"
               placeholder="Password"
               required /><i class="fa-solid fa-lock"></i
           ></label>
-          <button class="btn full" id="loginBtn" type="submit">Sign in</button>
+          <button class="btn" id="loginBtn" type="submit">Sign in</button>
           <div id="loginStatus" class="status" role="status"></div>
-          <p class="hint" style="color: rgb(239, 44, 44)">
-            Accounts are created by the owner in the backend database. Not for
-            public sign-up.
-          </p>
         </form>
       </section>
       <main id="dashboard" class="layout hidden">
         <section class="card">
+          <!-- logout button alignment helper -->
           <div
             style="
               display: flex;
@@ -83,28 +63,24 @@
           >
             <div>
               <div class="eyebrow">Workspace</div>
-              <h2 style="margin-top: 7px">Upload files</h2>
+              <h2 style="margin: 17px 0;text-align:left">Upload files</h2>
               <p class="sub">Choose files or drag them below.</p>
             </div>
             <button class="btn secondary" id="logoutBtn">Log out</button>
           </div>
           <label class="drop" id="dropZone" for="fileInput"
-            ><div style="font-size: 27px; margin-bottom: 5px">
+            ><div style="font-size: 27px; margin-bottom: 5px" >
               <i id="upload" class="fa-solid fa-upload"></i>
             </div>
             <input id="fileInput" type="file" multiple
           /></label>
           <div id="uploadStatus" class="status" role="status"></div>
-          <div class="note">
-            <strong>One-time transfer</strong><br />
-            <p style="color: rgb(228, 82, 82)">
-              After a complete download, the file is deleted from storage. If a
-              download fails, the file is kept so you can retry.
-            </p>
-          </div>
+          <p class="note">
+            FTP_Server <br> Hosted in vercel + supabase backend storage
+          </p>
         </section>
         <section class="card">
-          <div class="eyebrow">Shared inbox</div>
+          <div>Shared inbox</div>
           <div class="rowhead">
             <h2>Available files</h2>
             <span class="count" id="fileCount">0 files</span>
@@ -112,14 +88,16 @@
           <div id="fileList" class="files">
             <div class="empty">Sign in to load files.</div>
           </div>
-          <p class="hint" style="margin-top: 30px; text-align: right">
-            FTP_Server • Hosted in vercel + supabase backend storage
-          </p>
         </section>
       </main>
+      
       <footer class="footer">
+        <p class="hint " style="color: rgb(239, 44, 44) ;font-size:12px">
+            Accounts are created by the owner in the backend database. Not for
+            public sign-up.
+          </p>
         <i class="fa-solid fa-bolt-lightning"></i>
-        <p style="text-align: center; display: inline">
+        <p style="display: inline">
           Powered by link_cortex
         </p>
       </footer>
