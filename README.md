@@ -1,55 +1,94 @@
-# PrivateDrop — deployment guide
+# PrivateDrop — private file transfer
 
-This is a small private file-transfer website: one `index.html` frontend plus Supabase Auth, a private Storage bucket, and a Postgres table. Deploy the frontend to GitHub + Vercel. Your PC does not need to stay on.
+একটা ছোট private file-sharing website। Frontend: `index.html` + `script.js` + `style.css`। Backend: Supabase (Auth, Storage, Database)। Hosting: GitHub + Vercel। তোমার PC চালু রাখতে হবে না।
 
-## Important security facts
+## কী কী আছে
 
-- Do **not** add a Supabase `service_role` key to `index.html`, GitHub, or Vercel frontend variables. The frontend uses only the public anon/publishable key; database/storage policies protect the data.
-- This version uses ID + password by mapping an ID to a synthetic Supabase Auth email: `yourid@privatedrop.invalid`. Users must be created by the owner in Supabase Auth; there is no public registration form.
-- Files are shared among every account you create for this workspace. Only create accounts for people you trust.
-- A successful browser fetch triggers server object deletion. A browser cannot guarantee the file was saved permanently to disk; it confirms that the file was fetched to the browser before requesting deletion.
-- The download claim avoids two ordinary simultaneous clicks, but this is not a high-assurance transactional download service. Do not use it for highly sensitive or irreplaceable files without a backend endpoint that streams and consumes files atomically.
-- Free-tier limits, inactivity pauses, upload sizes and bandwidth depend on your Supabase/Vercel plans. The UI currently limits each file to 50 MB.
-- Account count is controlled manually in Supabase Auth; create no more than five accounts.
+- প্রতিটা user-এর আলাদা ID + password, আর প্রত্যেকে **শুধু নিজের ফাইল** দেখে (Supabase RLS policy)।
+- ফাইল আর ফাইলের নাম **browser-এই encrypt** হয় (AES-256)। Key তৈরি হয় ID + password থেকে, Supabase-এ যায় না। তাই Supabase Dashboard খুললেও ফাইলের ভেতরের কিছু দেখা যায় না।
+- Download all / Delete all বাটন।
+- Registration শুধু **গোপন invite link** দিয়ে, সর্বোচ্চ ৫ জন (সংখ্যা বদলানো যায়)। সীমা পূর্ণ হলে link আর কাজ করে না।
 
-## 1. Create Supabase backend
+## ⚠️ জেনে রাখো
 
-1. Create a project at https://supabase.com/
-2. Open **SQL Editor** and run all of `supabase/setup.sql`.
-3. In **Authentication → Providers → Email**, keep Email provider enabled. Turn off public sign-ups if that setting is available for your project.
-4. Under **Project Settings → API**, copy the Project URL and the anon/public key. Never copy the `service_role` key into the frontend.
-5. In `index.html`, replace:
-   - `PASTE_SUPABASE_URL_HERE`
-   - `PASTE_SUPABASE_ANON_KEY_HERE`
+- **Password ভুললে ফাইল চিরতরে হারাবে।** Admin reset করলেও পুরনো ফাইল খুলবে না (এটাই encryption-এর মূল্য)।
+- Dashboard-এ owner দেখতে পায়: কে কখন ফাইল upload করেছে, ফাইলের আনুমানিক size, আর user সংখ্যা। ভেতরের কিছু না।
+- Frontend code owner-ই deploy করে, তাই owner চাইলে কোড বদলে password ধরতে পারে। Encryption এটা আটকায় না। শুধু বিশ্বাসী লোকদের account দাও।
+- Browser-এ key রাখা হয় যাতে reload করলে আবার login না লাগে। **Public/university PC-তে কাজ শেষে অবশ্যই Log out করো**, তাহলে key মুছে যায়।
+- প্রতি ফাইল সর্বোচ্চ প্রায় ৫০ MB। Free plan-এর limit Supabase/Vercel অনুযায়ী বদলায়।
+- `service_role` key কখনো GitHub/Vercel/script.js-এ দিও না। শুধু public anon key ব্যবহার হয়।
 
-## 2. Create account IDs
+## ১. Supabase backend বানাও
 
-In **Authentication → Users → Add user / Create new user**, create each user with:
-- Email: `yourchosenid@privatedrop.invalid` (example: `labpc@privatedrop.invalid`)
-- A strong password you choose.
+1. https://supabase.com এ নতুন project খোলো।
+2. `supabase/setup.sql` ফাইলটা খুলে এই লাইনে তোমার গোপন code বসাও:
+   `values (true, 'CHANGE_THIS_TO_A_LONG_RANDOM_CODE', 5)`
+   - Code বানাতে SQL Editor-এ `select gen_random_uuid();` run করো, যে লেখা আসবে সেটা ব্যবহার করো।
+   - শেষের `5` হলো সর্বোচ্চ user সংখ্যা (তোমার নিজেরটাসহ)।
+3. পুরো `setup.sql` SQL Editor-এ paste করে **Run** করো।
+4. **Authentication → Providers → Email:**
+   - Email provider **চালু** রাখো।
+   - **"Confirm email" বন্ধ** করো। (আমরা নকল email ব্যবহার করি, confirm চালু থাকলে কেউ login করতে পারবে না।)
+   - Sign-ups চালু থাকুক। Invite code ছাড়া কেউ account খুলতে পারবে না, database আটকে দেয়।
+5. **Project Settings → API** থেকে Project URL আর anon/public key নাও। `script.js`-এর শুরুতে `SUPABASE_URL` ও `SUPABASE_ANON_KEY` বদলাও (নিজের project হলে)।
 
-The part before `@privatedrop.invalid` is the ID entered on the website. Create at most five accounts. Do not reuse your email password.
+## ২. GitHub + Vercel-এ deploy
 
-If your Supabase project requires email confirmation, either configure confirmation for your setup or mark the manually created users as confirmed in the dashboard. Do not enable public registration just to make login work.
+1. GitHub-এ repository খোলো, সব ফাইল upload করো (`index.html`, `script.js`, `style.css`, `favicon.png`, `README.md`, `supabase/`)।
+2. Vercel-এ repository import করো। এটা static site, কোনো build command লাগবে না। Root directory = repository root।
+3. Deploy হলে HTTPS link পাবে, যেমন `https://privatedrop.vercel.app`।
 
-## 3. Deploy to GitHub and Vercel
+## ৩. Invite link বানাও আর account খোলো
 
-1. Create a GitHub repository, for example `privatedrop`.
-2. Upload `index.html`, `README.md`, and the `supabase` folder.
-3. In Vercel, import the repository. It is a static site, so no build command is needed; set the output/root directory to the repository root.
-4. Deploy, then open the Vercel URL over HTTPS and test with a non-sensitive small file.
+Link-এর গঠন: `https://তোমার-site.vercel.app/?invite=তোমার-গোপন-code`
 
-## 4. Test before real use
+1. **আগে নিজে** এই link খুলে নিজের ID + password দিয়ে Register করো (তুমি প্রথম user)।
+2. তারপর বিশ্বাসী লোকদের একই link পাঠাও (সরাসরি WhatsApp/message-এ, public-এ না)।
+3. যখন সীমা পূর্ণ হবে (যেমন ৫ জন), link দিয়ে আর কেউ account খুলতে পারবে না।
 
-- Sign in with a test account from one browser/device.
-- Upload a small test file.
-- Open the site on a second device/browser and sign in with any created account.
-- Download the test file and confirm it disappears from the shared inbox and Storage.
-- Test a failed/interrupted download and verify the file can be retried.
-- Review Supabase Storage and database logs.
+## ৪. User delete করে নতুন নেওয়া
 
-## Known design limitations
+1. Supabase → **Authentication → Users** থেকে user delete করো। তার ফাইলের তালিকা নিজে থেকে মুছে যায়।
+2. Storage-এ তার ফাইল থেকে যায়। জায়গা খালি করতে **Storage → `private-files`** এ গিয়ে তার user id নামের folder delete করো।
+3. একটা জায়গা খালি হলো, নতুন কেউ link দিয়ে আসতে পারবে।
+4. ⚠️ পুরনো user link জানে। বের করে দেওয়া হলে code বদলে নতুন link বানাও (নিচে দেখো)।
 
-- The SQL `download_claimed_at` prevents ordinary concurrent claims, but claims do not expire automatically in the current listing query; if a browser closes after claiming a file, an owner may need to clear that row's `download_claimed_at` in the SQL editor to make it available again. For a robust production system, implement an Edge Function that issues a short-lived download ticket, streams the file, and deletes only after server-side completion.
-- The app is a shared inbox: any signed-in account can view, download and delete shared files. Do not give credentials to untrusted users.
-- No website can guarantee secure erasure from backups, caches, or a recipient's device. “Delete” means removing the live Storage object and its database row.
+## ৫. Code বা সীমা বদলানো (SQL Editor-এ)
+
+```sql
+-- নতুন code (পুরনো link সঙ্গে সঙ্গে অচল হবে)
+update public.app_settings set invite_code = 'নতুন-গোপন-code';
+
+-- সর্বোচ্চ user সংখ্যা বদলানো
+update public.app_settings set max_users = 8;
+
+-- এখন কতজন user আছে
+select count(*) from auth.users;
+```
+
+## ৬. Dashboard থেকে সরাসরি user বানাতে চাইলে
+
+নিয়মিত পদ্ধতি হলো invite link। Dashboard-এর "Add user" দিয়ে বানাতে চাইলে trigger সাময়িক বন্ধ করতে হবে:
+
+```sql
+alter table auth.users disable trigger enforce_invite_signup;
+-- Dashboard-এ user বানাও (email: তোমারid@privatedrop.invalid)
+alter table auth.users enable trigger enforce_invite_signup;  -- সঙ্গে সঙ্গে আবার চালু
+```
+
+## Troubleshooting
+
+- **Register করলে "Supabase rejected the internal email domain":** Supabase `.invalid` ধরনের test domain কখনো কখনো নেয় না। সমাধান: `script.js`-এ `EMAIL_DOMAIN` বদলাও এমন domain-এ যেটা তোমার নিজের এবং যেখানে কেউ mail নিতে পারে না, যেমন `privatedrop-users.তোমার-project.vercel.app`। পুরনো user-রা আগের মতোই login করতে পারবে (`LOGIN_DOMAINS` দুটোই চেষ্টা করে)।
+- **"Account created, but auto sign-in is off":** Supabase-এ "Confirm email" বন্ধ করো।
+- **"Registration failed":** link-এর code ভুল, user সীমা পূর্ণ, নয়তো ID আগেই নেওয়া। `setup.sql`-এ code বদলানো হয়েছে কিনা দেখো।
+- **"Could not load files":** `setup.sql` পুরোটা run হয়েছে কিনা দেখো।
+- **ফাইলের নাম "(old / unreadable file)":** encryption চালুর আগের ফাইল। Delete করে নতুন করে upload করো।
+- **Login-এ আটকে যায়:** ID বড়-ছোট হাতের অক্ষর একই ধরা হয়। Password ঠিক আছে কিনা দেখো।
+
+## Test করার নিয়ম (real ফাইলের আগে)
+
+1. Link দিয়ে test account খোলো, ছোট ফাইল upload করো।
+2. অন্য browser বা device-এ আরেকটা account খুলে দেখো প্রথম account-এর ফাইল দেখা যায় না।
+3. Supabase Storage খুলে দেখো ফাইলের নাম random, ভেতরের data পড়া যায় না।
+4. Download করে ফাইল ঠিকমতো খোলে কিনা দেখো।
+5. Download all আর Delete all চেষ্টা করো।

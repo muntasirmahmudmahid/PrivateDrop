@@ -27,10 +27,10 @@
         </div>
       </header>
       <section id="loginCard" class="card login">
-        <h2>
+        <h2 id="authTitle">
           As-salamu-alaykum
         </h2>
-        <p class="sub">Sign in to your private workspace</p>
+        <p class="sub" id="authSub">Sign in to your private workspace</p>
         <form id="loginForm">
           <label class="field"
             ><input
@@ -46,9 +46,22 @@
               placeholder="Password"
               required /><i class="fa-solid fa-lock"></i
           ></label>
+          <label class="field hidden" id="confirmField"
+            ><input
+              id="password2"
+              type="password"
+              placeholder="Confirm password" /><i class="fa-solid fa-lock"></i
+          ></label>
+          <p class="sub hidden" id="regNote" style="font-size: 12px">
+            Your files are encrypted with your password. If you forget it, your
+            files cannot be recovered.
+          </p>
           <button class="btn" id="loginBtn" type="submit">Sign in</button>
           <div id="loginStatus" class="status" role="status"></div>
         </form>
+        <p class="sub hidden" id="switchRow" style="margin: 16px 0 0; text-align: center">
+          <a href="#" id="switchMode" style="color: inherit">Have an invite? Register</a>
+        </p>
       </section>
       <main id="dashboard" class="layout hidden">
         <section class="card">
@@ -80,10 +93,16 @@
           </p>
         </section>
         <section class="card">
-          <div>Shared inbox</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+            <div>My files</div>
+            <span class="count" id="fileCount" style="margin-bottom:0">0 files</span>
+          </div>
           <div class="rowhead">
-            <h2>Available files</h2>
-            <span class="count" id="fileCount">0 files</span>
+            <h2 style="margin:0;text-align:left">Available files</h2>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="download" id="downloadAllBtn" disabled><i class="fa-solid fa-download"></i> All</button>
+              <button class="download" id="deleteAllBtn" disabled><i class="fa-solid fa-trash"></i> All</button>
+            </div>
           </div>
           <div id="fileList" class="files">
             <div class="empty">Sign in to load files.</div>
@@ -93,7 +112,7 @@
       
       <footer class="footer">
         <p class="hint " style="color: rgb(239, 44, 44) ;font-size:12px">
-            Accounts are created by the owner in the backend database. Not for
+            Registration is only possible with a private invite link. Not for
             public sign-up.
           </p>
         <i class="fa-solid fa-bolt-lightning"></i>
