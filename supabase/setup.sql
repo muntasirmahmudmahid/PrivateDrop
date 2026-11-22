@@ -127,3 +127,147 @@ drop trigger if exists enforce_invite_signup on auth.users;
 create trigger enforce_invite_signup
 before insert on auth.users
 for each row execute function public.enforce_invite_signup();
+
+-- =====================================================================
+-- Folders + file metadata (migration 002) and private folders (migration 003)
+-- =====================================================================
+-- PrivateDrop migration 002: nested folders + richer file metadata.
+-- Safe to run on an existing database (idempotent). Run in Supabase Dashboard > SQL Editor.
+
+-- 1) Folders (parent_id = null means root)
+create table if not exists public.folders (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (char_length(name) between 1 and 255 and name !~ '[/\\]'),
+  parent_id uuid references public.folders(id) on delete cascade,
+  created_by uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- Unique folder name per parent (case-insensitive; root folders share one "null parent" bucket)
+create unique index if not exists folders_unique_name_per_parent
+  on public.folders (coalesce(parent_id, '00000000-0000-0000-0000-000000000000'::uuid), lower(name));
+create index if not exists folders_parent_created_idx
+  on public.folders (parent_id, created_at desc);
+
+-- 2) Extra file metadata + folder link
+alter table public.files
+  add column if not exists folder_id uuid references public.folders(id) on delete cascade,
+  add column if not exists mime_type text,
+  add column if not exists extension text,
+  add column if not exists updated_at timestamptz not null default now();
+
+create index if not exists files_folder_created_idx
+  on public.files (folder_id, created_at desc);
+
+-- Backfill extension for files uploaded before this migration
+update public.files
+set extension = lower(substring(original_name from '\.([A-Za-z0-9]{1,10})$'))
+where extension is null;
+
+-- 3) updated_at maintenance
+create or replace function public.touch_updated_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.updated_at = pg_catalog.now();
+  return new;
+end;
+$$;
+
+drop trigger if exists files_touch_updated_at on public.files;
+create trigger files_touch_updated_at before update on public.files
+for each row execute function public.touch_updated_at();
+
+drop trigger if exists folders_touch_updated_at on public.folders;
+create trigger folders_touch_updated_at before update on public.folders
+for each row execute function public.touch_updated_at();
+
+-- 4) Row Level Security for folders (same shared-inbox model as files)
+alter table public.folders enable row level security;
+
+drop policy if exists "Authenticated users can list folders" on public.folders;
+create policy "Authenticated users can list folders"
+on public.folders for select to authenticated using (true);
+
+drop policy if exists "Authenticated users can create folders" on public.folders;
+create policy "Authenticated users can create folders"
+on public.folders for insert to authenticated
+with check (created_by = (select auth.uid()));
+
+drop policy if exists "Authenticated users can delete folders" on public.folders;
+create policy "Authenticated users can delete folders"
+on public.folders for delete to authenticated using (true);
+
+revoke all on public.folders from anon;
+revoke update on public.folders from authenticated;
+grant select, insert, delete on public.folders to authenticated;
+
+-- 5) Lists every storage object inside a folder tree (used before deleting a folder,
+--    because deleting DB rows does not delete Storage objects).
+create or replace function public.folder_storage_paths(root_id uuid)
+returns table(storage_path text)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  with recursive tree as (
+    select id from public.folders where id = root_id
+    union all
+    select f.id from public.folders f join tree t on f.parent_id = t.id
+  )
+  select fi.storage_path
+  from public.files fi
+  where fi.folder_id in (select id from tree)
+  order by fi.storage_path;
+$$;
+
+grant execute on function public.folder_storage_paths(uuid) to authenticated;
+
+-- PrivateDrop migration 003: folders become PRIVATE per user (like files) and folder names can be encrypted.
+-- Run AFTER migration_002_folders.sql. Safe to run more than once. Run in Supabase SQL Editor.
+
+-- 1) Each user sees / creates / deletes only their own folders (migration 002 let every user see all folders).
+drop policy if exists "Authenticated users can list folders" on public.folders;
+drop policy if exists "Authenticated users can create folders" on public.folders;
+drop policy if exists "Authenticated users can delete folders" on public.folders;
+drop policy if exists "Users can list own folders" on public.folders;
+drop policy if exists "Users can add own folders" on public.folders;
+drop policy if exists "Users can delete own folders" on public.folders;
+
+create policy "Users can list own folders"
+on public.folders for select to authenticated
+using (created_by = (select auth.uid()));
+
+-- A new folder may only sit inside a folder the user can already see (their own).
+create policy "Users can add own folders"
+on public.folders for insert to authenticated
+with check (
+  created_by = (select auth.uid())
+  and (parent_id is null or exists (select 1 from public.folders p where p.id = parent_id))
+);
+
+create policy "Users can delete own folders"
+on public.folders for delete to authenticated
+using (created_by = (select auth.uid()));
+
+-- 2) Folder names are stored encrypted (base64 text can contain "/"), so relax the old checks.
+alter table public.folders drop constraint if exists folders_name_check;
+alter table public.folders add constraint folders_name_check
+  check (char_length(name) between 1 and 2048);
+drop index if exists public.folders_unique_name_per_parent; -- cannot compare encrypted names in SQL
+
+-- 3) A file may only be placed in one of the user's own folders.
+drop policy if exists "Users can add own files" on public.files;
+create policy "Users can add own files"
+on public.files for insert to authenticated
+with check (
+  uploaded_by = (select auth.uid())
+  and (folder_id is null or exists (select 1 from public.folders f where f.id = folder_id))
+);
+
+-- Note: files.mime_type and files.extension stay empty on purpose. The file type lives inside the
+-- encrypted name/metadata, so the owner of the Supabase project cannot see what kind of files you store.

@@ -81,7 +81,7 @@ alter table auth.users enable trigger enforce_invite_signup;  -- সঙ্গে
 - **Register করলে "Supabase rejected the internal email domain":** Supabase `.invalid` ধরনের test domain কখনো কখনো নেয় না। সমাধান: `script.js`-এ `EMAIL_DOMAIN` বদলাও এমন domain-এ যেটা তোমার নিজের এবং যেখানে কেউ mail নিতে পারে না, যেমন `privatedrop-users.তোমার-project.vercel.app`। পুরনো user-রা আগের মতোই login করতে পারবে (`LOGIN_DOMAINS` দুটোই চেষ্টা করে)।
 - **"Account created, but auto sign-in is off":** Supabase-এ "Confirm email" বন্ধ করো।
 - **"Registration failed":** link-এর code ভুল, user সীমা পূর্ণ, নয়তো ID আগেই নেওয়া। `setup.sql`-এ code বদলানো হয়েছে কিনা দেখো।
-- **"Could not load files":** `setup.sql` পুরোটা run হয়েছে কিনা দেখো।
+- **"Could not load files":** `setup.sql` পুরোটা run হয়েছে কিনা দেখো। Folder-এর জন্য `migration_002` আর `migration_003` দুটোই run করতে হয়।
 - **ফাইলের নাম "(old / unreadable file)":** encryption চালুর আগের ফাইল। Delete করে নতুন করে upload করো।
 - **Login-এ আটকে যায়:** ID বড়-ছোট হাতের অক্ষর একই ধরা হয়। Password ঠিক আছে কিনা দেখো।
 
@@ -92,3 +92,28 @@ alter table auth.users enable trigger enforce_invite_signup;  -- সঙ্গে
 3. Supabase Storage খুলে দেখো ফাইলের নাম random, ভেতরের data পড়া যায় না।
 4. Download করে ফাইল ঠিকমতো খোলে কিনা দেখো।
 5. Download all আর Delete all চেষ্টা করো।
+
+---
+
+## নতুন: folder, folder upload, progress, preview
+
+**আগের project চালু থাকলে** Supabase SQL Editor-এ এই দুটো file পরপর একবার করে run করো:
+1. `supabase/migration_002_folders.sql` (আগে run করা থাকলে আবার লাগবে না)
+2. `supabase/migration_003_private_folders.sql`
+
+**একদম নতুন project হলে** শুধু `setup.sql` run করলেই হবে, দুটো migration ওটার ভেতরেই আছে।
+
+কী কী যোগ হয়েছে:
+- Nested folder, breadcrumb path, "Upload folder", drag-and-drop (file আর folder দুটোই), একসাথে অনেক file।
+- প্রতি file-এর জন্য গোল progress circle (ভেতরে %), পাশাপাশি, ছোট নামসহ।
+- File type অনুযায়ী icon: image (preview), video, audio, archive, folder। Text/document-এ আগের `▤` icon। ডানে format label (PDF, ZIP ইত্যাদি)।
+- Newest/Oldest sort। Folder আগে, তারপর file।
+- List ভেতরে scroll হয়। লম্বা নাম ডান থেকে বামে ঘোরে (প্রথম ২০টা), বাকিগুলো `নাম…` হয়ে এক লাইনে থাকে।
+- Upload: encrypt করা binary সরাসরি Storage-এ, ৬ MB chunk করে (resumable), base64 নেই।
+
+মনে রাখো:
+- Folder-এর নামও encrypt হয়, আর প্রতি user-এর folder আলাদা (অন্যে দেখে না)।
+- File encrypt করা, তাই download করলে browser-এ নামিয়ে decrypt করে save হয় (memory-তে, ≤ ৫০ MB)। Image preview-ও একইভাবে decrypt হয়, শুধু যেগুলো screen-এ দেখা যায় সেগুলোর, আর ২ MB পর্যন্ত।
+- Download all / Delete all শুধু যে folder-এ আছো সেটার ভেতরের জিনিসের জন্য। Delete all সব subfolder-সহ মুছে।
+- Resume শুধু network কেটে গেলে কাজ করে, tab বন্ধ করে আবার খুললে না।
+- "Upload folder" বোতাম কিছু phone browser-এ কাজ নাও করতে পারে। Desktop-এ drag-and-drop আর বোতাম দুটোই চলে।

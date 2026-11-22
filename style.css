@@ -151,7 +151,7 @@ body {
 }
 .layout {
   display: grid;
-  grid-template-columns: 0.95fr 1.2fr;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.2fr);
   gap: 17px;
 }
 .hidden {
@@ -279,7 +279,7 @@ body {
     margin-bottom: 31px;
   }
   .layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .card {
     padding: 18px;
@@ -294,4 +294,234 @@ body {
 
 #upload {
   font-size: 50px;
+}
+
+/* ===== additions: folders, file types, sort, breadcrumb, upload progress ===== */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+.actions .btn {
+  font-size: 14px;
+  padding: 10px 14px;
+}
+.tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 40px;
+}
+.tools .count {
+  margin-bottom: 0;
+}
+.sort {
+  padding: 10px 15px;
+  border-radius: 20px;
+  font-size: 15px;
+}
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: var(--text);
+}
+.crumb {
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  padding: 3px 6px;
+  border-radius: 6px;
+}
+button.crumb {
+  cursor: pointer;
+}
+button.crumb:hover {
+  box-shadow: var(--shadow);
+}
+.crumb.current {
+  font-weight: 650;
+}
+.crumbs .sep {
+  font-size: 10px;
+  color: var(--theme);
+}
+.fileicon {
+  overflow: hidden;
+}
+.fileicon i {
+  font-size: 18px;
+}
+.fileicon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.file.folder {
+  cursor: pointer;
+}
+.fmt {
+  flex-shrink: 0;
+  font: 12px/1 lucida console, monospace;
+  border: 1px solid var(--theme);
+  border-radius: 8px;
+  padding: 5px 8px;
+  max-width: 76px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+.queue {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.upsum {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text);
+}
+.up {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 56px;
+}
+.ring {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+}
+.ring svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.ring circle {
+  fill: none;
+  stroke-width: 4;
+}
+.ring .bg {
+  stroke: rgba(255, 178, 35, 0.25);
+}
+.ring .fg {
+  stroke: var(--theme);
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  transition: stroke-dashoffset 0.3s linear;
+}
+.ring span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text);
+}
+.upname {
+  min-width: 0;
+  max-width: 100%;
+  text-align: center;
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+@media (max-width: 480px) {
+  .rowhead {
+    flex-wrap: wrap;
+  }
+  .file {
+    gap: 6px;
+    padding: 9px;
+  }
+  .download {
+    padding: 9px 11px;
+  }
+  .fmt {
+    font-size: 11px;
+    padding: 4px 6px;
+    max-width: 54px;
+  }
+}
+
+/* ===== scrollable inbox + one-line names (marquee) ===== */
+.files {
+  max-height: min(62vh, 480px);
+  overflow-y: auto;
+  padding: 2px 4px 2px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--theme) transparent;
+}
+.file {
+  flex-shrink: 0;
+}
+.filename,
+.filesize {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.filename.marq {
+  text-overflow: clip;
+}
+.filename.marq .nm {
+  display: inline-block;
+  animation: marq var(--dur, 8s) linear infinite;
+  will-change: transform;
+}
+.file:hover .filename.marq .nm {
+  animation-play-state: paused;
+}
+@keyframes marq {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .filename.marq .nm {
+    animation: none;
+  }
+}
+
+/* names are clipped to the free space, so buttons stay at the right and the card keeps its size */
+.card,
+.files,
+.file {
+  min-width: 0;
+}
+.fileinfo {
+  overflow: hidden;
+}
+
+/* header row of the file list (title + sort + count) */
+.listhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.listtools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
